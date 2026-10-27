@@ -295,7 +295,7 @@
       '<div><span>' + (String(r.entrega).indexOf('domicilio') >= 0 ? 'A domicilio' : 'Recoger') + '</span><span>' + esc(r.fechaTxt) + '</span></div>' +
       '<div class="tot"><span>Total</span><span>' + money(r.total) + '</span></div>';
     $('ov-a').textContent = 'Te escribimos por WhatsApp con ' + (String(r.entrega).indexOf('domicilio') >= 0 ? 'la hora de entrega' : 'la dirección para recoger') + ' y los datos para pagar. Ya puedes cerrar esta página.';
-    $('ov-b').innerHTML = '<button id="ov-otro">Hacer otro pedido</button>';
+    $('ov-b').innerHTML = (S.d.promo ? '<div class="promo">' + esc(S.d.promo) + '</div>' : '') + '<button id="ov-otro">Hacer otro pedido</button>';
     $('ov-otro').onclick = function () { S.cart = {}; S.rid = nuevoRid(); S.enviando = false; ov.className = 'ov'; render(); window.scrollTo(0, 0); };
     ov.className = 'ov on done';
   }
@@ -324,7 +324,7 @@
       precios: { docena: 36, pieza: 4, especial: 42, envio: 10, envioMedio: 6, umbralMedio: 24, umbral: 36, envioFuera: 15, politicaNueva: true },
       zonas: ['92130', '92037'], zonasInactivas: ['91910', '91911', '91913', '91914', '91915', '92118'], diasEntrega: [], diaDefecto: 5,
       cliente: CODE ? { nombre: 'Ana', direccion: 'Av. del Mar 214', zip: '92130', ultimo: { lineas: [{ sabor: 'Pizza', piezas: 12 }], entrega: 'recoger', texto: '12 Pizza', yaNoHay: [] } } : null,
-      codigoInvalido: false };
+      codigoInvalido: false, promo: '\uD83C\uDF81 Invita a una amiga o un amigo a probar Chizpita: cuando haga su primer pedido, tú te llevas una docena gratis en tu siguiente orden. Solo pídele que te mencione al pedir.' };
   }
 
   cargar();
