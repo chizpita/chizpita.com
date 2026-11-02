@@ -20,6 +20,7 @@
     var urg = !!(P.politicaNueva && dom && fecha && D.fechas.defecto && fecha < D.fechas.defecto);
     var fueraZona = dom && D.zonas.length > 0 && zona !== z;
     var fueraDia = dom && !!fecha && D.diasEntrega.length > 0 && D.diasEntrega.indexOf(dow(fecha)) < 0;
+    var recargo = fecha && D.diasEntrega.length > 0 && D.diasEntrega.indexOf(dow(fecha)) < 0 ? (P.recargoDia || 0) : 0;
     var envio = 0;
     if (dom && piezas > 0) {
       if (!P.politicaNueva) envio = piezas >= P.umbral ? 0 : P.envio;
@@ -28,8 +29,8 @@
       else if (piezas >= P.umbralMedio) envio = P.envioMedio;
       else envio = P.envio;
     }
-    return { piezas: piezas, docenas: docenas, sueltas: sueltas, docEsp: docEsp, subtotal: subtotal, envio: envio,
-             total: Math.round((subtotal + envio) * 100) / 100, urg: urg, fueraZona: fueraZona, fueraDia: fueraDia, zona: zona, zip: z };
+    return { piezas: piezas, docenas: docenas, sueltas: sueltas, docEsp: docEsp, subtotal: subtotal, envio: envio, recargo: recargo,
+             total: Math.round((subtotal + envio + recargo) * 100) / 100, urg: urg, fueraZona: fueraZona, fueraDia: fueraDia, zona: zona, zip: z };
   }
 
   var api = { cotizar: cotizar, zip: zip, dow: dow, OTRA_ZONA: OTRA_ZONA };
