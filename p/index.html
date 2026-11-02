@@ -96,6 +96,8 @@ textarea.inp{height:80px;padding:11px 13px;resize:none}
 .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin:0 -2px;padding-left:2px}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:none;border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:9px 13px;text-align:left;min-width:96px}
+.chips .chip{flex:1 0 96px}
+.chip.otro{width:100%}
 .chip .a{font-size:12px;color:var(--ink-2);font-weight:600;text-transform:capitalize}
 .chip .b{font-family:var(--f-display);font-weight:400;font-size:17px;line-height:1.1}
 .chip[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--paper)}

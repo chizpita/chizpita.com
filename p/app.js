@@ -214,19 +214,29 @@
     return h + '</section>';
   }
 
+  /* Otro dia: cuesta lo mismo que fuera de horario, solo si Ajustes define los dias de entrega. Recoger nunca cuesta extra. */
+  function diasTxt() {
+    var d = S.d, l = (d.diasEntrega.length ? d.diasEntrega : [d.diaDefecto]).map(function (i) { return DIAS[i < 0 ? 5 : i]; });
+    return l.length > 1 ? l.slice(0, -1).join(', ') + ' y ' + l[l.length - 1] : l[0];
+  }
+  function explicaOtroDia() {
+    var d = S.d, P = d.precios;
+    if (!d.diasEntrega.length) return '<p class="datenote">Entregamos los ' + diasTxt() + '. ¿Necesitas otro día? Elígelo en «Otro día» y te confirmamos por WhatsApp.</p>';
+    return '<p class="datenote">Entregamos los ' + diasTxt() + '. <b>¿Ese día no te queda?</b> ¡Buscamos otro contigo! Los días especiales están sujetos a confirmación y llevan un cargo de <b>' + money(P.recargoDia) + '</b> por pedido. Si además lo quieres a domicilio, la entrega ese día cuesta <b>' + money(P.envioFuera) + '</b>, sin importar el tamaño de tu pedido.</p>';
+  }
   function notaFecha() {
     var f = S.fecha, d = S.d, dom = S.entrega === 'domicilio', P = d.precios;
+    var especial = d.diasEntrega.length ? d.diasEntrega.indexOf(CP.dow(f)) < 0 : CP.dow(f) !== d.diaDefecto;
     if (dom && P.politicaNueva && f < d.fechas.defecto) return '<p class="datenote">Entrega urgente (antes del ' + esc(flarga(d.fechas.defecto)) + '): el envío cuesta <b>' + money(P.envioFuera) + '</b>.</p>';
-    if (dom && d.diasEntrega.length && d.diasEntrega.indexOf(CP.dow(f)) < 0) return '<p class="datenote">Ese día no es de entrega: el envío cuesta <b>' + money(P.envioFuera) + '</b>.</p>';
-    if (d.diaDefecto >= 0 && CP.dow(f) !== d.diaDefecto) return '<p class="datenote">No es nuestro día habitual: te confirmamos la hora por WhatsApp.</p>';
-    return d.horario ? '<p class="datenote">' + esc(d.horario) + '</p>' : '';
+    if (especial && d.diasEntrega.length) return '<p class="datenote">Día especial: <b>' + money(P.recargoDia) + '</b> por el pedido' + (dom ? ' + <b>' + money(P.envioFuera) + '</b> de entrega a domicilio' : '') + '. Te confirmamos por WhatsApp.</p>';
+    if (especial) return '<p class="datenote">Día especial: te confirmamos por WhatsApp.</p>';
+    return '';
   }
-
   function fechasHtml() {
     var d = S.d, enChips = d.fechas.chips.some(function (c) { return c.fecha === S.fecha; });
     var h = '<section class="pad sec"><h2>¿Para cuándo?</h2><div class="chips" role="group" aria-label="Fecha">' + d.fechas.chips.map(function (c) {
       return '<button class="chip" data-f="' + c.fecha + '" aria-pressed="' + (!S.otra && S.fecha === c.fecha) + '"><div class="a">' + esc(fdia(c.fecha)) + (c.proxima ? ' · próxima' : '') + '</div><div class="b">' + esc(fcorta(c.fecha)) + '</div></button>';
-    }).join('') + '<button class="chip" data-otra="1" aria-pressed="' + (S.otra || !enChips) + '"><div class="a">Otro día</div><div class="b">' + (S.otra || !enChips ? esc(fcorta(S.fecha)) : 'Elegir') + '</div></button></div>';
+    }).join('') + '</div><button class="chip otro" data-otra="1" aria-pressed="' + (S.otra || !enChips) + '"><div class="a">Otro día' + (S.d.diasEntrega.length ? ' · día especial' : '') + '</div><div class="b">' + (S.otra || !enChips ? esc(fcorta(S.fecha)) : 'Elegir fecha') + '</div></button>' + explicaOtroDia();
     if (S.otra || !enChips) h += '<label class="field" for="f-fecha">Fecha<input class="inp" type="date" id="f-fecha" min="' + d.fechas.min + '" max="' + d.fechas.max + '" value="' + S.fecha + '"></label>';
     return h + notaFecha() + '</section>';
   }
@@ -277,7 +287,7 @@
     ov.className = 'ov on wait';
     var envio = DEMO ? new Promise(function (ok) { setTimeout(function () { var q = CP.cotizar(S.d, cart, esEsp, entrega, S.zip, fecha);
         ok({ ok: true, nombre: primerNombre() || S.nombre.split(' ')[0], resumen: textoLineas(cart), entrega: entrega === 'domicilio' ? 'Entrega a domicilio' : 'Recoger',
-             fecha: fecha, fechaTxt: flarga(fecha), subtotal: q.subtotal, envio: q.envio, urg: q.urg, total: q.total }); }, 1100); })
+             fecha: fecha, fechaTxt: flarga(fecha), subtotal: q.subtotal, envio: q.envio, urg: q.urg, recargo: q.recargo, total: q.total }); }, 1100); })
       : fetch(CFG.api, { method: 'POST', body: JSON.stringify(payload), redirect: 'follow' }).then(function (r) { return r.json(); });
     envio.then(function (r) {
       var espera = Math.max(0, 1000 - (Date.now() - inicio));
@@ -292,6 +302,7 @@
     $('ov-h').textContent = '¡Listo' + (r.nombre ? ', ' + r.nombre : '') + '!';
     $('ov-r').innerHTML = '<div><span>' + esc(r.resumen) + '</span><span>' + money(r.subtotal) + '</span></div>' +
       (r.envio ? '<div><span>Envío' + (r.urg ? ' (urgente)' : '') + '</span><span>' + money(r.envio) + '</span></div>' : '') +
+      (r.recargo ? '<div><span>Día especial</span><span>' + money(r.recargo) + '</span></div>' : '') +
       '<div><span>' + (String(r.entrega).indexOf('domicilio') >= 0 ? 'A domicilio' : 'Recoger') + '</span><span>' + esc(r.fechaTxt) + '</span></div>' +
       '<div class="tot"><span>Total</span><span>' + money(r.total) + '</span></div>';
     $('ov-a').textContent = 'Te escribimos por WhatsApp con ' + (String(r.entrega).indexOf('domicilio') >= 0 ? 'la hora de entrega' : 'la dirección para recoger') + ' y los datos para pagar. Ya puedes cerrar esta página.';
@@ -321,8 +332,8 @@
       sabores: [{ nombre: 'El Clasico', titulo: 'El Clásico', esp: false }, { nombre: 'Pizza', titulo: 'Pizza', esp: false }, { nombre: 'Chipotle', titulo: 'Chipotle', esp: false },
                 { nombre: 'Aceituna Kalamata', titulo: 'Kalamata Olive', esp: false }, { nombre: 'Zatar', titulo: 'Zatar', esp: false },
                 { nombre: 'Especial de la Semana', titulo: 'Chilaquil Verde', esp: true }],
-      precios: { docena: 36, pieza: 4, especial: 42, envio: 10, envioMedio: 6, umbralMedio: 24, umbral: 36, envioFuera: 15, politicaNueva: true },
-      zonas: ['92130', '92037'], zonasInactivas: ['91910', '91911', '91913', '91914', '91915', '92118'], diasEntrega: [], diaDefecto: 5,
+      precios: { docena: 36, pieza: 4, especial: 42, envio: 10, envioMedio: 6, umbralMedio: 24, umbral: 36, envioFuera: 15, recargoDia: 15, politicaNueva: true },
+      zonas: ['92130', '92037'], zonasInactivas: ['91910', '91911', '91913', '91914', '91915', '92118'], diasEntrega: [5], diaDefecto: 5,
       cliente: CODE ? { nombre: 'Ana', direccion: 'Av. del Mar 214', zip: '92130', ultimo: { lineas: [{ sabor: 'Pizza', piezas: 12 }], entrega: 'recoger', texto: '12 Pizza', yaNoHay: [] } } : null,
       codigoInvalido: false, promo: '\uD83C\uDF81 Invita a una amiga o un amigo a probar Chizpita: cuando haga su primer pedido, tú te llevas una docena gratis en tu siguiente orden. Solo pídele que te mencione al pedir.' };
   }
